@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carlsberg Excellence - Multi-Department Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; }
+        .main-container { display: flex; height: 100vh; }
+        .sidebar { width: 250px; background: linear-gradient(135deg, #2c5f73 0%, #1a3a47 100%); color: white; padding: 30px 20px; overflow-y: auto; box-shadow: 2px 0 10px rgba(0,0,0,0.1); }
+        .sidebar h1 { font-size: 18px; margin-bottom: 10px; font-weight: 600; }
+        .sidebar p { font-size: 12px; opacity: 0.8; margin-bottom: 30px; line-height: 1.5; }
+        .departments-list { display: flex; flex-direction: column; gap: 10px; }
+        .dept-btn { background: rgba(255,255,255,0.1); color: white; border: 2px solid rgba(255,255,255,0.2); padding: 12px 15px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.3s; text-align: left; }
+        .dept-btn:hover { background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.4); transform: translateX(5px); }
+        .dept-btn.active { background: #2185b4; border-color: #2185b4; box-shadow: 0 4px 12px rgba(33,133,180,0.3); }
+        .content-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .header { background: linear-gradient(135deg, #2185b4 0%, #1a6a94 100%); color: white; padding: 30px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .header h2 { font-size: 28px; margin-bottom: 10px; }
+        .header p { font-size: 14px; opacity: 0.9; }
+        .slide-container { flex: 1; overflow-y: auto; padding: 40px; background: white; }
+        .slide { display: none; animation: fadeIn 0.3s; }
+        .slide.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .slide h1 { color: #2c5f73; font-size: 32px; margin-bottom: 20px; border-bottom: 3px solid #2185b4; padding-bottom: 15px; }
+        .slide h2 { color: #2185b4; font-size: 24px; margin-top: 30px; margin-bottom: 15px; }
+        .slide h3 { color: #2c5f73; font-size: 18px; margin-top: 20px; margin-bottom: 10px; }
+        .slide p { line-height: 1.6; margin-bottom: 15px; color: #555; }
+        .slide ul, .slide ol { margin-left: 30px; margin-bottom: 15px; }
+        .slide li { margin-bottom: 8px; line-height: 1.6; }
+        .metric-card { background: #f0f7f9; border-left: 4px solid #2185b4; padding: 20px; border-radius: 6px; }
+        .metric-label { font-size: 12px; color: #666; text-transform: uppercase; font-weight: 600; margin-bottom: 8px; }
+        .metric-value { font-size: 24px; color: #2185b4; font-weight: bold; }
+        .strength-item { background: #e8f5e9; border-left: 4px solid #4caf50; padding: 12px 15px; margin-bottom: 10px; border-radius: 4px; font-size: 14px; }
+        .gap-item { background: #ffebee; border-left: 4px solid #f44336; padding: 12px 15px; margin-bottom: 10px; border-radius: 4px; font-size: 14px; }
+        .phase-box { background: #f5f5f5; border: 1px solid #ddd; border-radius: 6px; padding: 20px; margin-bottom: 20px; }
+        .phase-box h4 { color: #2185b4; margin-bottom: 10px; font-size: 16px; }
+        .phase-box ul { margin-left: 20px; }
+        .outcome-item { background: #e3f2fd; border-left: 4px solid #1976d2; padding: 15px; margin-bottom: 12px; border-radius: 4px; font-size: 14px; line-height: 1.6; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th { background: #2c5f73; color: white; padding: 15px; text-align: left; font-weight: 600; }
+        td { padding: 12px 15px; border-bottom: 1px solid #e0e0e0; }
+        tr:hover { background: #f5f5f5; }
+        .controls { padding: 20px 30px; background: #f9f9f9; border-top: 1px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center; }
+        .control-btn { background: #2185b4; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.3s; }
+        .control-btn:hover { background: #1a6a94; }
+        .control-btn:disabled { background: #ccc; cursor: not-allowed; }
+        .slide-counter { color: #666; font-size: 14px; font-weight: 500; }
+        .title-slide { text-align: center; padding: 60px 40px; }
+        .title-slide h1 { font-size: 48px; margin: 40px 0 20px; border: none; }
+        .title-slide .subtitle { font-size: 24px; color: #2185b4; margin-bottom: 40px; }
+        .title-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; margin-top: 60px; }
+        .title-metrics .metric-card { padding: 30px; }
+        .title-metrics .metric-value { font-size: 32px; }
+        .radial-chart { display: flex; justify-content: center; align-items: center; margin: 40px 0; min-height: 500px; }
+        .phase-improvement-chart { margin: 30px 0; }
+        .phase-progress-item { margin-bottom: 25px; }
+        .phase-progress-label { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; font-weight: 600; color: #2c5f73; }
+        .progress-bar { width: 100%; height: 30px; background: #e0e0e0; border-radius: 15px; overflow: hidden; position: relative; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #2185b4 0%, #1a6a94 100%); border-radius: 15px; display: flex; align-items: center; justify-content: flex-end; padding-right: 10px; color: white; font-weight: bold; font-size: 12px; transition: width 0.3s ease; }
+        .legend { display: flex; justify-content: center; gap: 30px; margin-top: 25px; flex-wrap: wrap; }
+        .legend-item { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+        .legend-color { width: 20px; height: 20px; border-radius: 3px; }
+        @media (max-width: 768px) {
+            .main-container { flex-direction: column; }
+            .sidebar { width: 100%; padding: 20px; }
+            .departments-list { flex-direction: row; flex-wrap: wrap; }
+            .dept-btn { flex: 1; min-width: 120px; }
+            .slide-container { padding: 20px; }
+            .title-metrics { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="sidebar">
+            <h1>🏭 CarlEx</h1>
+            <p>Excellence Implementation</p>
+            <div class="departments-list" id="departmentList"></div>
+        </div>
+        <div class="content-area">
+            <div class="header">
+                <h2 id="departmentTitle">Carlsberg Excellence</h2>
+                <p id="departmentSubtitle">12-Month Implementation Roadmap</p>
+            </div>
+            <div class="slide-container" id="slideContainer"></div>
+            <div class="controls">
+                <button class="control-btn" id="prevBtn" onclick="previousSlide()">← Previous</button>
+                <span class="slide-counter"><span id="currentSlide">1</span> / <span id="totalSlides">1</span></span>
+                <button class="control-btn" id="nextBtn" onclick="nextSlide()">Next →</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const departments = [
+            {
+                name: "Packaging",
+                icon: "📦",
+                slides: [
+                    { type: "title", title: "PACKAGING DEPARTMENT", subtitle: "Carlsberg Excellence Roadmap", baseline: "13.3%", target: "36.7%", gap: "+0.93 points" },
+                    { type: "radial", title: "Maturity Benchmark", subtitle: "5-Dimension Assessment", dimensions: [ { name: "Zone Management", current: 2, budgeted: 3, kastzalan: 3 }, { name: "Workflow Std", current: 1, budgeted: 2, kastzalan: 3 }, { name: "Visual Mgmt", current: 1, budgeted: 2, kastzalan: 2 }, { name: "Performance", current: 2, budgeted: 3, kastzalan: 3 }, { name: "Organizational", current: 1, budgeted: 2, kastzalan: 2 } ] },
+                    { type: "assessment", title: "Current State", strengths: ["Line 4 digital OEE operational", "PMS meetings at L2/L3/L4", "M1/M3 abnormality in place", "TPM improvements ongoing"], gaps: ["No 9-Grid cascade", "Workflow gaps", "No Gemba Kaizen", "Leadership development needed"] },
+                    { type: "roadmap", title: "12-Month Roadmap", phases: [ { month: "Month 1-2", focus: "Foundation", activities: ["Deploy 9-Grid", "Establish PMS L4", "Define KPIs"] }, { month: "Month 3-4", focus: "Workflows", activities: ["Map workflows", "Visual standards", "KPI boards"] }, { month: "Month 5-8", focus: "Kaizen", activities: ["Gemba Kaizen", "RCA training", "30/60/90 plan"] }, { month: "Month 9-12", focus: "Sustainability", activities: ["Leadership dev", "Gemba walks", "Target 36.7%"] } ] },
+                    { type: "phase-improvement", title: "Phase Progress", phases: [ { name: "Month 1-2: Foundation", progress: 25, status: "Foundation - Deploy 9-Grid & PMS" }, { name: "Month 3-4: Workflows", progress: 50, status: "Workflow Mapping & Documentation" }, { name: "Month 5-8: Kaizen", progress: 75, status: "Gemba Kaizen & Problem Solving" }, { name: "Month 9-12: Excellence", progress: 100, status: "Sustainability & Leadership" } ] },
+                    { type: "outcomes", title: "Expected Outcomes", outcomes: [ { metric: "Overall Maturity", baseline: "13.3%", target: "36.7%", improvement: "+23.4 points" }, { metric: "OEE Performance", baseline: "~75%", target: "82%", improvement: "+7 points" }, { metric: "Quality Grade", baseline: "Good", target: "Excellent", improvement: "Elevated" }, { metric: "Problem Resolution", baseline: "Ad-hoc", target: "Structured", improvement: "Systematic" } ] },
+                    { type: "kpi", title: "KPI Metrics", metrics: [ { area: "OEE", current: "~75%", target: "82%", owner: "Production Manager" }, { area: "Quality", current: "Good", target: "Excellent", owner: "Quality Lead" }, { area: "Safety", current: "Strong", target: "Best-in-Class", owner: "HSE Manager" }, { area: "Cost", current: "Baseline", target: "-5%", owner: "Finance Lead" } ] }
+                ]
+            },
+            {
+                name: "Syrup Room",
+                icon: "🥃",
+                slides: [
+                    { type: "title", title: "SYRUP ROOM DEPARTMENT", subtitle: "Carlsberg Excellence Roadmap", baseline: "Baseline", target: "Progressive", gap: "In Progress" },
+                    { type: "radial", title: "Maturity Benchmark", subtitle: "5-Dimension Assessment", dimensions: [ { name: "Zone Management", current: 1, budgeted: 2, kastzalan: 3 }, { name: "Workflow Std", current: 1, budgeted: 2, kastzalan: 3 }, { name: "Visual Mgmt", current: 0, budgeted: 1, kastzalan: 2 }, { name: "Performance", current: 1, budgeted: 2, kastzalan: 3 }, { name: "Organizational", current: 1, budgeted: 2, kastzalan: 2 } ] },
+                    { type: "assessment", title: "Current State", strengths: ["Chemical handling protocols", "Inventory systems", "Safety procedures", "Team competency"], gaps: ["Limited standardization", "No digital OEE", "Visual mgmt missing", "Gemba Kaizen not established"] },
+                    { type: "roadmap", title: "12-Month Roadmap", phases: [ { month: "Month 1-2", focus: "Documentation", activities: ["Document workflows", "Identify waste", "Baseline metrics"] }, { month: "Month 3-4", focus: "Visual Mgmt", activities: ["Workflow diagrams", "Visual standards", "KPI boards"] }, { month: "Month 5-8", focus: "Optimization", activities: ["Improvements", "Digital tracking", "Problem-solving"] }, { month: "Month 9-12", focus: "Scale", activities: ["Scale improvements", "Leadership dev", "Target maturity"] } ] },
+                    { type: "phase-improvement", title: "Phase Progress", phases: [ { name: "Month 1-2: Documentation", progress: 25, status: "Workflow Documentation" }, { name: "Month 3-4: Visual", progress: 50, status: "Visual Management" }, { name: "Month 5-8: Optimization", progress: 75, status: "System Optimization" }, { name: "Month 9-12: Scale", progress: 100, status: "Sustainability" } ] },
+                    { type: "outcomes", title: "Expected Outcomes", outcomes: [ { metric: "Efficiency", baseline: "Baseline", target: "+15%", improvement: "Enhanced" }, { metric: "Quality", baseline: "Standard", target: "Enhanced", improvement: "Elevated" }, { metric: "Safety", baseline: "Compliant", target: "Exemplary", improvement: "Advanced" }, { metric: "Cost", baseline: "Current", target: "-8%", improvement: "Optimized" } ] },
+                    { type: "kpi", title: "Critical Success Factors", metrics: [ { area: "Efficiency", current: "Baseline", target: "+15%", owner: "Operations Manager" }, { area: "Quality", current: "Standard", target: "Enhanced", owner: "Quality Team" }, { area: "Safety", current: "Compliant", target: "Exemplary", owner: "HSE Lead" }, { area: "Cost", current: "Current", target: "-8%", owner: "Finance" } ] }
+                ]
+            },
+            {
+                name: "Maintenance",
+                icon: "🔧",
+                slides: [
+                    { type: "title", title: "MAINTENANCE DEPARTMENT", subtitle: "Carlsberg Excellence Roadmap", baseline: "13.5%", target: "40%+", gap: "+26.5%" },
+                    { type: "radial", title: "Maturity Benchmark", subtitle: "5-Dimension Assessment", dimensions: [ { name: "Zone Management", current: 2, budgeted: 3, kastzalan: 3 }, { name: "Workflow Std", current: 1, budgeted: 2, kastzalan: 3 }, { name: "Visual Mgmt", current: 1, budgeted: 2, kastzalan: 2 }, { name: "Performance", current: 2, budgeted: 3, kastzalan: 3 }, { name: "Organizational", current: 1, budgeted: 3, kastzalan: 3 } ] },
+                    { type: "assessment", title: "Current State", strengths: ["TPM fundamentals", "Preventive maintenance", "Equipment tracking", "Technical competency"], gaps: ["Predictive maintenance gaps", "No digital asset mgmt", "Workflow gaps", "Leadership development"] },
+                    { type: "roadmap", title: "12-Month Roadmap", phases: [ { month: "Month 1-2", focus: "TPM Framework", activities: ["TPM pillars", "9-Grid cascade", "Set KPIs"] }, { month: "Month 3-4", focus: "Digital Transform", activities: ["CMMS system", "Asset database", "Work orders"] }, { month: "Month 5-8", focus: "Capability", activities: ["TPM training", "Problem-solving", "Predictive maintenance"] }, { month: "Month 9-12", focus: "Excellence", activities: ["40%+ maturity", "Gemba walks", "Leadership bench"] } ] },
+                    { type: "phase-improvement", title: "Phase Progress", phases: [ { name: "Month 1-2: TPM", progress: 25, status: "TPM Framework" }, { name: "Month 3-4: Digital", progress: 50, status: "Digital Systems" }, { name: "Month 5-8: Capability", progress: 75, status: "Training & Dev" }, { name: "Month 9-12: Excellence", progress: 100, status: "Excellence Mode" } ] },
+                    { type: "outcomes", title: "Expected Outcomes", outcomes: [ { metric: "Overall Maturity", baseline: "13.5%", target: "40%+", improvement: "+26.5%" }, { metric: "Equipment Avail", baseline: "92%", target: "97%", improvement: "+5 points" }, { metric: "MTTR", baseline: "4 hrs", target: "2 hrs", improvement: "-50%" }, { metric: "Preventive Ratio", baseline: "65%", target: "85%", improvement: "+20%" } ] },
+                    { type: "kpi", title: "Key Performance Targets", metrics: [ { area: "Equipment Availability", current: "92%", target: "97%", owner: "Maintenance Mgr" }, { area: "Mean Time to Repair", current: "4 hrs", target: "2 hrs", owner: "Technical Lead" }, { area: "Preventive Ratio", current: "65%", target: "85%", owner: "Planning Lead" }, { area: "Safety Performance", current: "Strong", target: "Best-in-Class", owner: "HSE Coord" } ] }
+                ]
+            },
+            {
+                name: "Quality",
+                icon: "✓",
+                slides: [
+                    { type: "title", title: "QUALITY DEPARTMENT", subtitle: "Carlsberg Excellence Roadmap", baseline: "Strategic", target: "Network Model", gap: "Leading" },
+                    { type: "radial", title: "Maturity Benchmark", subtitle: "5-Dimension Assessment", dimensions: [ { name: "Zone Management", current: 2, budgeted: 3, kastzalan: 3 }, { name: "Workflow Std", current: 2, budgeted: 3, kastzalan: 3 }, { name: "Visual Mgmt", current: 2, budgeted: 3, kastzalan: 3 }, { name: "Performance", current: 3, budgeted: 3, kastzalan: 3 }, { name: "Organizational", current: 2, budgeted: 3, kastzalan: 3 } ] },
+                    { type: "assessment", title: "Current State", strengths: ["Quality culture", "Testing capabilities", "Comprehensive docs", "Defect prevention"], gaps: ["Workflow opportunities", "Gemba Kaizen expansion", "Analytics integration", "Leadership scale-up"] },
+                    { type: "roadmap", title: "12-Month Roadmap", phases: [ { month: "Month 1-2", focus: "Strategy Align", activities: ["Align strategy", "Quality metrics", "9-Grid cascade"] }, { month: "Month 3-4", focus: "Process Excel", activities: ["Map workflows", "Visual mgmt", "KPI dashboards"] }, { month: "Month 5-8", focus: "Innovation", activities: ["Quality initiatives", "Leadership dev", "Analytics"] }, { month: "Month 9-12", focus: "Network Lead", activities: ["Network model", "Best practices", "Excellence culture"] } ] },
+                    { type: "phase-improvement", title: "Phase Progress", phases: [ { name: "Month 1-2: Alignment", progress: 25, status: "Strategy & Metrics" }, { name: "Month 3-4: Process", progress: 50, status: "Process Excellence" }, { name: "Month 5-8: Innovation", progress: 75, status: "Innovation & Dev" }, { name: "Month 9-12: Network", progress: 100, status: "Network Leadership" } ] },
+                    { type: "outcomes", title: "Expected Outcomes", outcomes: [ { metric: "Product Quality", baseline: "Excellent", target: "Outstanding", improvement: "Elevated" }, { metric: "Customer Sat", baseline: "95%", target: "98%", improvement: "+3 points" }, { metric: "Defect Prevention", baseline: "Strong", target: "World-Class", improvement: "Advanced" }, { metric: "Compliance", baseline: "100%", target: "100%", improvement: "Sustained" } ] },
+                    { type: "kpi", title: "Strategic Quality Metrics", metrics: [ { area: "Product Quality", current: "Excellent", target: "Outstanding", owner: "Quality Director" }, { area: "Customer Satisfaction", current: "95%", target: "98%", owner: "Customer Lead" }, { area: "Defect Prevention", current: "Strong", target: "World-Class", owner: "Prevention Mgr" }, { area: "Compliance", current: "100%", target: "100%", owner: "Compliance Officer" } ] }
+                ]
+            },
+            {
+                name: "Warehouse",
+                icon: "🏭",
+                slides: [
+                    { type: "title", title: "WAREHOUSE DEPARTMENT", subtitle: "CarlEx Foundations Assessment", baseline: "3%", target: "55%", gap: "+2.2 levels" },
+                    { type: "radial", title: "Maturity Benchmark", subtitle: "5-Dimension Assessment", dimensions: [ { name: "Zone Management", current: 1, budgeted: 2, kastzalan: 3 }, { name: "Workflow Std", current: 0, budgeted: 2, kastzalan: 3 }, { name: "Visual Mgmt", current: 0, budgeted: 1, kastzalan: 2 }, { name: "Performance", current: 0, budgeted: 2, kastzalan: 2 }, { name: "Organizational", current: 0, budgeted: 1, kastzalan: 2 } ] },
+                    { type: "assessment", title: "Current State", strengths: ["Material sorting", "Set-in-order partial", "SAP system partial", "Zone leaders identified"], gaps: ["No zone mapping", "Workflows not documented", "SOPs outdated", "Visual standards missing", "9-Grid not cascaded", "Gemba Kaizen absent"] },
+                    { type: "roadmap", title: "12-Month Roadmap", phases: [ { month: "Month 1-2", focus: "Foundation", activities: ["Create zone map", "Document workflows", "Update SOPs", "Assign owners"] }, { month: "Month 3-4", focus: "Visual Mgmt", activities: ["Visual standards", "KPI displays", "Shadow boards", "Escalation process"] }, { month: "Month 5-8", focus: "Performance", activities: ["Deploy 9-Grid", "PMS structure", "RCA training", "Gemba Kaizen"] }, { month: "Month 9-12", focus: "Capability", activities: ["Skill matrices", "Leadership dev", "Gemba walks", "Target 2.4/5"] } ] },
+                    { type: "phase-improvement", title: "Phase Progress", phases: [ { name: "Month 1-2: Foundation", progress: 25, status: "Zone Maps & Workflows" }, { name: "Month 3-4: Visual", progress: 50, status: "Visual Management" }, { name: "Month 5-8: Performance", progress: 75, status: "Performance Management" }, { name: "Month 9-12: Capability", progress: 100, status: "Kastzalan Level" } ] },
+                    { type: "outcomes", title: "Expected Outcomes", outcomes: [ { metric: "Overall Maturity", baseline: "3%", target: "55%", improvement: "+2.2 levels" }, { metric: "Zone Management", baseline: "1/5", target: "3/5", improvement: "+2.0" }, { metric: "Workflow Std", baseline: "0/5", target: "3/5", improvement: "+3.0" }, { metric: "Visual Mgmt", baseline: "0/5", target: "2/5", improvement: "+2.0" } ] },
+                    { type: "kpi", title: "Key Focus Areas", metrics: [ { area: "Zone Management", current: "1/5 (Emerging)", target: "3/5 (Developing)", owner: "Warehouse Manager" }, { area: "Workflow Standardization", current: "0/5 (No Evidence)", target: "3/5 (Developing)", owner: "System Operators" }, { area: "Visual Management", current: "0/5 (No Evidence)", target: "2/5 (Emerging)", owner: "Zone Leaders" }, { area: "Performance Management", current: "0/5 (No Evidence)", target: "2/5 (Emerging)", owner: "Department Manager" } ] }
+                ]
+            }
+        ];
+
+        let currentDepartment = 0;
+        let currentSlide = 0;
+
+        function init() {
+            renderDepartmentList();
+            loadDepartment(0);
+        }
+
+        function renderDepartmentList() {
+            const list = document.getElementById('departmentList');
+            departments.forEach((dept, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'dept-btn ' + (index === 0 ? 'active' : '');
+                btn.textContent = dept.icon + ' ' + dept.name;
+                btn.onclick = () => loadDepartment(index);
+                list.appendChild(btn);
+            });
+        }
+
+        function loadDepartment(index) {
+            currentDepartment = index;
+            currentSlide = 0;
+            document.querySelectorAll('.dept-btn').forEach((btn, i) => {
+                btn.classList.toggle('active', i === index);
+            });
+            const dept = departments[index];
+            document.getElementById('departmentTitle').textContent = dept.icon + ' ' + dept.name;
+            renderSlide();
+        }
+
+        function generateRadialChart(dimensions) {
+            const size = 400;
+            const center = size / 2;
+            const maxRadius = 140;
+            const levels = 5;
+            let svg = `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="max-width: 100%;">`;
+            for (let i = 1; i <= levels; i++) {
+                const r = (maxRadius / levels) * i;
+                svg += `<circle cx="${center}" cy="${center}" r="${r}" fill="none" stroke="#e0e0e0" stroke-width="1"/>`;
+            }
+            const angleSlice = (Math.PI * 2) / dimensions.length;
+            dimensions.forEach((dim, i) => {
+                const angle = angleSlice * i - Math.PI / 2;
+                const x1 = center + maxRadius * Math.cos(angle);
+                const y1 = center + maxRadius * Math.sin(angle);
+                svg += `<line x1="${center}" y1="${center}" x2="${x1}" y2="${y1}" stroke="#e0e0e0" stroke-width="1"/>`;
+                const labelDist = maxRadius + 30;
+                const labelX = center + labelDist * Math.cos(angle);
+                const labelY = center + labelDist * Math.sin(angle);
+                svg += `<text x="${labelX}" y="${labelY}" font-size="12" font-weight="600" fill="#2c5f73" text-anchor="middle">${dim.name}</text>`;
+            });
+            let currentPoints = '';
+            dimensions.forEach((dim, i) => {
+                const angle = angleSlice * i - Math.PI / 2;
+                const r = (maxRadius / levels) * Math.min(dim.current, 5);
+                const x = center + r * Math.cos(angle);
+                const y = center + r * Math.sin(angle);
+                currentPoints += `${x},${y} `;
+            });
+            svg += `<polygon points="${currentPoints}" fill="rgba(239,83,80,0.3)" stroke="#ef5350" stroke-width="2"/>`;
+            let budgetedPoints = '';
+            dimensions.forEach((dim, i) => {
+                const angle = angleSlice * i - Math.PI / 2;
+                const r = (maxRadius / levels) * Math.min(dim.budgeted, 5);
+                const x = center + r * Math.cos(angle);
+                const y = center + r * Math.sin(angle);
+                budgetedPoints += `${x},${y} `;
+            });
+            svg += `<polygon points="${budgetedPoints}" fill="rgba(255,167,38,0.2)" stroke="#ffa726" stroke-width="2" stroke-dasharray="5,5"/>`;
+            let kastzalanPoints = '';
+            dimensions.forEach((dim, i) => {
+                const angle = angleSlice * i - Math.PI / 2;
+                const r = (maxRadius / levels) * Math.min(dim.kastzalan, 5);
+                const x = center + r * Math.cos(angle);
+                const y = center + r * Math.sin(angle);
+                kastzalanPoints += `${x},${y} `;
+            });
+            svg += `<polygon points="${kastzalanPoints}" fill="rgba(102,187,106,0.2)" stroke="#66bb6a" stroke-width="2"/>`;
+            svg += `</svg>`;
+            return svg;
+        }
+
+        function renderSlide() {
+            const dept = departments[currentDepartment];
+            const slide = dept.slides[currentSlide];
+            const container = document.getElementById('slideContainer');
+            container.innerHTML = '';
+
+            if (slide.type === 'title') {
+                container.innerHTML = `<div class="slide active title-slide"><h1>${slide.title}</h1><p class="subtitle">${slide.subtitle}</p><div class="title-metrics"><div class="metric-card"><div class="metric-label">Current Baseline</div><div class="metric-value">${slide.baseline}</div></div><div class="metric-card"><div class="metric-label">Target</div><div class="metric-value">${slide.target}</div></div><div class="metric-card"><div class="metric-label">Improvement Gap</div><div class="metric-value">${slide.gap}</div></div></div></div>`;
+            } else if (slide.type === 'radial') {
+                let html = `<div class="slide active"><h1>${slide.title}</h1><p style="text-align: center; color: #2185b4; font-weight: 600; margin-bottom: 20px;">${slide.subtitle}</p><div class="radial-chart">${generateRadialChart(slide.dimensions)}</div><div class="legend"><div class="legend-item"><div class="legend-color" style="background: #ef5350;"></div> Current</div><div class="legend-item"><div class="legend-color" style="background: #ffa726;"></div> Budgeted</div><div class="legend-item"><div class="legend-color" style="background: #66bb6a;"></div> Kastzalan</div></div></div>`;
+                container.innerHTML = html;
+            } else if (slide.type === 'assessment') {
+                let html = `<div class="slide active"><h1>${slide.title}</h1>`;
+                if (slide.strengths) {
+                    html += '<h2>Strengths</h2>';
+                    slide.strengths.forEach(s => { html += `<div class="strength-item">✓ ${s}</div>`; });
+                }
+                if (slide.gaps) {
+                    html += '<h2>Areas for Improvement</h2>';
+                    slide.gaps.forEach(g => { html += `<div class="gap-item">✗ ${g}</div>`; });
+                }
+                html += '</div>';
+                container.innerHTML = html;
+            } else if (slide.type === 'roadmap') {
+                let html = `<div class="slide active"><h1>${slide.title}</h1>`;
+                slide.phases.forEach(phase => {
+                    html += `<div class="phase-box"><h4>${phase.month}: ${phase.focus}</h4><ul>${phase.activities.map(a => `<li>${a}</li>`).join('')}</ul></div>`;
+                });
+                html += '</div>';
+                container.innerHTML = html;
+            } else if (slide.type === 'phase-improvement') {
+                let html = `<div class="slide active"><h1>${slide.title}</h1><div class="phase-improvement-chart">`;
+                slide.phases.forEach(phase => {
+                    html += `<div class="phase-progress-item"><div class="phase-progress-label"><span>${phase.name}</span><span>${phase.progress}%</span></div><div class="progress-bar"><div class="progress-fill" style="width: ${phase.progress}%">${phase.progress > 10 ? phase.progress + '%' : ''}</div></div><div style="font-size: 13px; color: #666; margin-top: 5px;">${phase.status}</div></div>`;
+                });
+                html += `</div></div>`;
+                container.innerHTML = html;
+            } else if (slide.type === 'outcomes') {
+                let html = `<div class="slide active"><h1>${slide.title}</h1>`;
+                slide.outcomes.forEach(outcome => {
+                    html += `<div class="outcome-item"><strong>${outcome.metric}</strong><br>From <strong>${outcome.baseline}</strong> → <strong>${outcome.target}</strong><br><span style="color: #1976d2;">Improvement: ${outcome.improvement}</span></div>`;
+                });
+                html += '</div>';
+                container.innerHTML = html;
+            } else if (slide.type === 'kpi') {
+                let html = `<div class="slide active"><h1>${slide.title}</h1><table><tr><th>Area</th><th>Current</th><th>Target</th><th>Owner</th></tr>`;
+                slide.metrics.forEach(m => {
+                    html += `<tr><td>${m.area}</td><td>${m.current}</td><td>${m.target}</td><td>${m.owner}</td></tr>`;
+                });
+                html += '</table></div>';
+                container.innerHTML = html;
+            }
+
+            document.getElementById('currentSlide').textContent = currentSlide + 1;
+            document.getElementById('totalSlides').textContent = dept.slides.length;
+            document.getElementById('prevBtn').disabled = currentSlide === 0;
+            document.getElementById('nextBtn').disabled = currentSlide === dept.slides.length - 1;
+        }
+
+        function nextSlide() {
+            const dept = departments[currentDepartment];
+            if (currentSlide < dept.slides.length - 1) {
+                currentSlide++;
+                renderSlide();
+            }
+        }
+
+        function previousSlide() {
+            if (currentSlide > 0) {
+                currentSlide--;
+                renderSlide();
+            }
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
